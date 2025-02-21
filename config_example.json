@@ -1,0 +1,40 @@
+{
+	"settings": {
+		"auto_backup": true,
+		"start_command": "java -Xmx8G -DproxySet=true -DsocksProxyHost=127.0.0.1 -DsocksProxyPort=8889 -jar fabric-server-mc.1.21.4-loader.0.16.10-launcher.1.0.1.jar nogui",
+
+		"src_dir": "D:/AppData/Fabric Server/FromSpring/world",
+		"git_dir": "D:/AppData/Fabric Server/FromSpring/backup",
+		"work_dir":"D:/AppData/Fabric Server/FromSpring",
+		"tray_icon": "res/minecraft_icon.ico",
+		"window_icon": "res/minecraft_icon.ico",
+		"stylesheet": "styles/MacOS.qss",
+
+		"backup_prefix":"backup_",
+		"tagged_backup_prefix":"tag_",
+		"backup_timestamp_format":"%Y%m%d%H%M%S",
+		"backup_interval": 1800,
+		"info_update_interval": 1,
+		"font": "Sarasa Term Slab SC Semibold",
+		"font_size": 12,
+		"timestamp_format": "%H:%M:%S",
+		"backup_when_players_online": true,
+		"start_server_at_startup": true,
+		"cmdl_colormap": {
+			"WARN": "orange",
+			"ERROR": "red",
+			"joined the game": "gold",
+			"left the game": "tomato",
+			"Server empty for 60 seconds": "pink",
+			"UI": "gray",
+			"Backup": "forestgreen",
+			"User": "dodgerblue",
+			"Core": "mediumpurple",
+
+			"__fallback__": "black"
+		},
+		"cmdl_output_exclude":[
+			"of a max of"
+		]
+	}
+}
