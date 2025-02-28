@@ -6,6 +6,7 @@ from ui import UI
 CONFIG_FILE="config.json"
 
 if __name__ == "__main__":
+
     with open(CONFIG_FILE, "r", encoding="utf-8") as configfile:
         config = json.load(configfile)
     settings = config["settings"]

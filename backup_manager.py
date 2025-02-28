@@ -6,16 +6,17 @@ import threading
 
 ROLE = "Backup Manager"
 
+
 class Backup_Manager(QObject):
     sig_out = pyqtSignal(str)
     sig_task_done = pyqtSignal()
 
     def __init__(self, settings):
         super().__init__()
-        self.src_dir = os.path.abspath(settings['src_dir'])
-        self.git_dir = os.path.abspath(settings['git_dir'])
-        self.timestamp_format=settings["timestamp_format"]
-        self.backup_prefix=settings["backup_prefix"]
+        self.src_dir = os.path.abspath(settings["src_dir"])
+        self.git_dir = os.path.abspath(settings["git_dir"])
+        self.timestamp_format = settings["timestamp_format"]
+        self.backup_prefix = settings["backup_prefix"]
         self.tagged_backup_prefix = settings["tagged_backup_prefix"]
         self.backup_timestamp_format = settings["backup_timestamp_format"]
         # self.max_backup_days = settings.get("max_backup_days")
@@ -31,9 +32,10 @@ class Backup_Manager(QObject):
                     "log",
                     "--all",
                     r"--grep=^" + commit_prefix,
-                    '--pretty=format:%H',
+                    "--pretty=format:%H",
                 ],
                 text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
             commits_hash = output.split("\n")
             return commits_hash
@@ -50,9 +52,10 @@ class Backup_Manager(QObject):
                     "log",
                     "--all",
                     r"--grep=^" + commit_prefix,
-                    '--pretty=format:%s',
+                    "--pretty=format:%s",
                 ],
                 text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
             commits_message = output.split("\n")
             return commits_message
@@ -71,9 +74,10 @@ class Backup_Manager(QObject):
                     "--grep",
                     commit_message,
                     "--fixed-strings",
-                    '--pretty=format:%H',
+                    "--pretty=format:%H",
                 ],
                 text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
             commits_hash = output.split("\n")
             if len(commits_hash) == 0:
@@ -85,9 +89,7 @@ class Backup_Manager(QObject):
             self.out(ROLE, "ERROR", f"Get the commit by message failed: {str(e)}")
 
     def backup_timestamp(self):
-        return datetime.datetime.now().strftime(
-            self.backup_timestamp_format
-        )
+        return datetime.datetime.now().strftime(self.backup_timestamp_format)
 
     def out(self, role, flag, line):
         current_time = datetime.datetime.now().strftime(self.timestamp_format)
@@ -105,7 +107,24 @@ class Backup_Manager(QObject):
             with open(attribute_file, "w") as f:
                 f.write("* binary\n")
             if not os.path.exists(os.path.join(self.git_dir, "HEAD")):
-                subprocess.run(["git", "init", "--bare"], cwd=self.git_dir, check=True)
+                subprocess.run(
+                    ["git", "init", "--bare"],
+                    cwd=self.git_dir,
+                    check=True,
+                    creationflags=subprocess.CREATE_NO_WINDOW,
+                )
+            subprocess.run(
+                [
+                    "git",
+                    "--git-dir",
+                    self.git_dir,
+                    "--work-tree",
+                    self.src_dir,
+                    "reset"
+                ],
+                check=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
             subprocess.run(
                 [
                     "git",
@@ -117,6 +136,7 @@ class Backup_Manager(QObject):
                     "--all",
                 ],
                 check=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
             subprocess.run(
                 [
@@ -130,6 +150,7 @@ class Backup_Manager(QObject):
                     commit_msg,
                 ],
                 check=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
             self.out(ROLE, "INFO", f"Backup completed: {commit_msg}")
 
@@ -143,22 +164,28 @@ class Backup_Manager(QObject):
 
     def clean(self):
         self.out(ROLE, "INFO", f"Cleaning git repo...")
-        subprocess.run(
-            [
-                "git",
-                "--git-dir",
-                self.git_dir,
-                "reflog",
-                "expire",
-                "--expire=now",
-                "--all",
-            ],
-            check=True,
-        )
-        subprocess.run(
-            ["git", "--git-dir", self.git_dir, "gc", "--prune=now", "--aggressive"],
-            check=True,
-        )
+        try:
+            subprocess.run(
+                [
+                    "git",
+                    "--git-dir",
+                    self.git_dir,
+                    "reflog",
+                    "expire",
+                    "--expire=now",
+                    "--all",
+                ],
+                check=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+            subprocess.run(
+                ["git", "--git-dir", self.git_dir, "gc", "--prune=now", "--aggressive"],
+                check=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+            self.out(ROLE, "INFO", f"Cleaned git repo")
+        except subprocess.CalledProcessError as e:
+            self.out(ROLE, "ERROR", f"Clean git repo failed: {str(e)}")
 
     def run_task(self, f, args=()):
         def thread_task():
@@ -168,6 +195,7 @@ class Backup_Manager(QObject):
                 print(f"Error in thread_task: {e}")
             finally:
                 self.sig_task_done.emit()
+
         thread = threading.Thread(target=thread_task)
         thread.start()
 
@@ -179,11 +207,6 @@ class Backup_Manager(QObject):
         new_backup_name = self.tagged_backup_prefix + tag
         self.new_commit(new_backup_name)
 
-    def auto_task(self):
-        self.out(ROLE, "INFO", "Start running an auto task")
-        self.new_auto_backup()
-        self.clean()
-
     def when_about_to_quit(self):
         self.sig_out.disconnect()
         self.sig_task_done.disconnect()
@@ -192,8 +215,8 @@ class Backup_Manager(QObject):
         self.out(ROLE, "INFO", f"Rolling back to: {commit_msg}...")
         try:
             os.makedirs(self.src_dir, exist_ok=True)
-            commit_hash=self.get_commit_hash_by_msg(commit_msg)
-            branch_name=self.backup_timestamp()+"_to_"+commit_msg
+            commit_hash = self.get_commit_hash_by_msg(commit_msg)
+            branch_name = self.backup_timestamp() + "_to_" + commit_msg
             command = [
                 "git",
                 "--git-dir",
@@ -204,10 +227,16 @@ class Backup_Manager(QObject):
                 "-b",
                 branch_name,
                 commit_hash,
-                "--force"
+                "--force",
             ]
 
-            subprocess.run(command, check=True)
-            self.out(ROLE, "INFO", f"Created branch {branch_name} from {commit_msg} and switched to new branch")
+            subprocess.run(
+                command, check=True, creationflags=subprocess.CREATE_NO_WINDOW
+            )
+            self.out(
+                ROLE,
+                "INFO",
+                f"Created branch {branch_name} from {commit_msg} and switched to new branch",
+            )
         except subprocess.CalledProcessError as e:
             self.out(ROLE, "ERROR", f"Rollback failed: {str(e)}")
