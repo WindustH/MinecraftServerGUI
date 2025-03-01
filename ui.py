@@ -27,14 +27,14 @@ class UI(QWidget):
     def __init__(self,settings):
         super().__init__()
 
-        self.timestamp_format=settings['timestamp_format']
-        self.stylesheet_path=settings['stylesheet']
-        self.ui_font=settings['font']
-        self.ui_font_size=settings['font_size']
-        self.tray_icon_path=settings['tray_icon']
-        self.window_icon_path=settings['window_icon']
-        self.colormap=settings['cmdl_colormap']
-        self.output_exclude=settings['cmdl_output_exclude']
+        self.timestamp_format=settings.get('timestamp_format', '%H:%M:%S')
+        self.stylesheet_path=settings.get('stylesheet', 'styles/MacOS.qss')
+        self.ui_font=settings.get('font', 'Arial')
+        self.ui_font_size=settings.get('font_size', 12)
+        self.tray_icon_path=settings.get('tray_icon', 'res/minecraft_icon.ico')
+        self.window_icon_path=settings.get('window_icon', 'res/minecraft_icon.ico')
+        self.colormap=settings.get('cmdl_colormap', {})
+        self.output_exclude=settings.get('cmdl_output_exclude', [])
 
         self.core=Core(settings)
 

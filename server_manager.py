@@ -15,7 +15,6 @@ class Server_Manager(QProcess):
     sig_server_out = pyqtSignal(str)
     sig_info_updated=pyqtSignal()
 
-
     def __init__(self, settings):
         super().__init__()
         self.player_joined_listener = Listener_for_Specific_Output(
@@ -25,9 +24,12 @@ class Server_Manager(QProcess):
             self.sig_server_out, lambda x: "left the game" in x
         )
 
-        self.timestamp_format = settings["timestamp_format"]
-        self.start_command = settings["start_command"]
-
+        self.timestamp_format = settings.get("timestamp_format", "%H:%M:%S")
+        self.start_command = settings.get("start_command")
+        if self.start_command == None:
+            raise KeyError(
+                'Can\'t find option "start_command". Please add it in config.json'
+            )
         self.is_running = False
         self.player_count = 0
         self.start_time = None
@@ -124,7 +126,6 @@ class Server_Manager(QProcess):
         self.sig_out.disconnect()
         self.sig_info_updated.disconnect()
         self.sig_server_out.disconnect()
-
 
     def update_server_info(self):
         if self.is_running:

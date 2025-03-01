@@ -17,19 +17,19 @@ class Core(QObject):
 
         self.is_backing_up = False
 
-        self.backup_interval = settings["backup_interval"]
-        self.info_update_interval = settings["info_update_interval"]
-        self.timestamp_format = settings["timestamp_format"]
-        self.auto_backup = settings["auto_backup"]
-        self.backup_when_players_online = settings["backup_when_players_online"]
-        self.start_server_at_startup = settings["start_server_at_startup"]
+        self.backup_interval = settings.get("backup_interval", 1800)
+        self.info_update_interval = settings.get("info_update_interval", 1)
+        self.timestamp_format = settings.get("timestamp_format", "%H:%M:%S")
+        self.auto_backup = settings.get("auto_backup", True)
+        self.backup_when_players_online = settings.get("backup_when_players_online", True)
+        self.start_server_at_startup = settings.get("start_server_at_startup", True)
 
         self.server = Server_Manager(settings)
         self.backup_manager = Backup_Manager(settings)
         self.update_info_timer = QTimer()
         self.backup_timer = QTimer()
         self.player_cmd_listener = Listener_for_Specific_Output(
-            self.server.sig_server_out, lambda x: "#$" in x and "<" in x and ">" in x
+            self.server.sig_server_out, lambda x: "$" in x and "<" in x and ">" in x
         )
 
         self.update_info_timer.timeout.connect(self.server.update_server_info)
@@ -92,7 +92,7 @@ class Core(QObject):
         self.sig_out.disconnect()
 
     def when_detected_player_cmd(self, line):
-        pattern = r"^.+? <(.*?)> \#\$([a-zA-Z0-9_]+) (.+)$"
+        pattern = r"^.+? <(.*?)> \$([a-zA-Z0-9_]+) (.+)$"
         match = re.match(pattern, line.strip())
 
         if not match:
@@ -104,6 +104,7 @@ class Core(QObject):
 
         try:
             option = json.loads(option_json)
+            option["sender"] = sender
         except json.JSONDecodeError:
             self.out(
                 ROLE, "WARN", f'"{line}" has option which is not in valid JSON format'

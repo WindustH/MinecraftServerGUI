@@ -13,14 +13,22 @@ class Backup_Manager(QObject):
 
     def __init__(self, settings):
         super().__init__()
-        self.src_dir = os.path.abspath(settings["src_dir"])
-        self.git_dir = os.path.abspath(settings["git_dir"])
-        self.timestamp_format = settings["timestamp_format"]
-        self.backup_prefix = settings["backup_prefix"]
-        self.tagged_backup_prefix = settings["tagged_backup_prefix"]
-        self.backup_timestamp_format = settings["backup_timestamp_format"]
-        # self.max_backup_days = settings.get("max_backup_days")
-        # self.max_backup_count = settings.get("max_backup_count")
+        relative_src_dir=settings.get("src_dir")
+        relative_git_dir=settings.get("git_dir")
+        if relative_src_dir == None:
+            raise KeyError(
+                'Can\'t find option "src_dir". Please add it in config.json'
+            )
+        if relative_git_dir == None:
+            raise KeyError(
+                'Can\'t find option "git_dir". Please add it in config.json'
+            )
+        self.src_dir = os.path.abspath(relative_src_dir)
+        self.git_dir = os.path.abspath(relative_git_dir)
+        self.timestamp_format = settings.get("timestamp_format", "%Y%m%d%H%M%S")
+        self.backup_prefix = settings.get("backup_prefix", "backup_")
+        self.tagged_backup_prefix = settings.get("tagged_backup_prefix", "tag_")
+        self.backup_timestamp_format = settings.get("backup_timestamp_format", "%Y%m%d%H%M%S")
 
     def get_commits_hash_by_msg_prefix(self, commit_prefix):
         try:
